@@ -24,3 +24,7 @@ mcp-config.json
 # MCP publisher
 mcp-publisher.exe
 *.mcpb
+
+# Compiled MathType bridge binaries (built locally via
+# word_document_server/mathtype_bridge/build_mathtype_bridge.ps1)
+word_document_server/bin/
