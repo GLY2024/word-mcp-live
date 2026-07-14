@@ -1,6 +1,6 @@
 # Tool Reference
 
-Complete list of all 123 tools provided by word-mcp-live.
+Complete reference for the tools provided by word-mcp-live.
 
 ---
 

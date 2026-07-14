@@ -1,13 +1,30 @@
 import json
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from word_document_server.core import mathtype_bridge
 
 
-def test_invoke_bridge_sends_one_utf8_json_request(tmp_path, monkeypatch):
+@pytest.fixture
+def windows_bridge(monkeypatch):
+    monkeypatch.setattr(mathtype_bridge, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(
+        mathtype_bridge.subprocess, "CREATE_NO_WINDOW", 0, raising=False
+    )
+
+
+requires_windows = pytest.mark.skipif(
+    mathtype_bridge.os.name != "nt",
+    reason="The packaged MathType bridge executable requires Windows.",
+)
+
+
+def test_invoke_bridge_sends_one_utf8_json_request(
+    tmp_path, monkeypatch, windows_bridge
+):
     executable = tmp_path / "MathTypeBridge.exe"
     executable.touch()
     captured = {}
@@ -41,7 +58,9 @@ def test_invoke_bridge_sends_one_utf8_json_request(tmp_path, monkeypatch):
     assert captured["check"] is False
 
 
-def test_invoke_bridge_surfaces_structured_bridge_error(tmp_path, monkeypatch):
+def test_invoke_bridge_surfaces_structured_bridge_error(
+    tmp_path, monkeypatch, windows_bridge
+):
     executable = tmp_path / "MathTypeBridge.exe"
     executable.touch()
 
@@ -71,7 +90,9 @@ def test_invoke_bridge_surfaces_structured_bridge_error(tmp_path, monkeypatch):
     assert str(error.value) == "The equation changed after it was read."
 
 
-def test_invoke_bridge_rejects_invalid_json_response(tmp_path, monkeypatch):
+def test_invoke_bridge_rejects_invalid_json_response(
+    tmp_path, monkeypatch, windows_bridge
+):
     executable = tmp_path / "MathTypeBridge.exe"
     executable.touch()
     monkeypatch.setattr(
@@ -89,7 +110,7 @@ def test_invoke_bridge_rejects_invalid_json_response(tmp_path, monkeypatch):
     assert "native failure" in str(error.value)
 
 
-def test_invoke_bridge_reports_timeout(tmp_path, monkeypatch):
+def test_invoke_bridge_reports_timeout(tmp_path, monkeypatch, windows_bridge):
     executable = tmp_path / "MathTypeBridge.exe"
     executable.touch()
 
@@ -112,7 +133,16 @@ def test_default_executable_is_packaged_next_to_the_python_module():
     assert path.is_absolute()
 
 
-def test_missing_bridge_executable_has_build_instruction(tmp_path):
+def test_invoke_bridge_requires_windows(monkeypatch):
+    monkeypatch.setattr(mathtype_bridge, "os", SimpleNamespace(name="posix"))
+
+    with pytest.raises(mathtype_bridge.MathTypeBridgeError) as error:
+        mathtype_bridge.invoke_bridge("list_equations")
+
+    assert error.value.code == "windows_required"
+
+
+def test_missing_bridge_executable_has_build_instruction(tmp_path, windows_bridge):
     missing = Path(tmp_path) / "MathTypeBridge.exe"
 
     with pytest.raises(mathtype_bridge.MathTypeBridgeError) as error:
@@ -128,6 +158,7 @@ def test_missing_bridge_executable_has_build_instruction(tmp_path):
     assert "scripts/build_mathtype_bridge.ps1" not in str(error.value)
 
 
+@requires_windows
 def test_packaged_bridge_validates_and_canonicalizes_mathml():
     first = '<math xmlns="http://www.w3.org/1998/Math/MathML">\n  <mi>x</mi>\n</math>'
     second = '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>'
@@ -140,6 +171,7 @@ def test_packaged_bridge_validates_and_canonicalizes_mathml():
     assert len(first_result["mathml_sha256"]) == 64
 
 
+@requires_windows
 def test_packaged_bridge_rejects_dtd_mathml():
     mathml = (
         '<!DOCTYPE math [<!ENTITY value "x">]>'
@@ -152,6 +184,7 @@ def test_packaged_bridge_rejects_dtd_mathml():
     assert error.value.code == "invalid_mathml"
 
 
+@requires_windows
 def test_packaged_bridge_preserves_unicode_math_symbols():
     mathml = (
         '<math xmlns="http://www.w3.org/1998/Math/MathML">'
@@ -165,6 +198,7 @@ def test_packaged_bridge_preserves_unicode_math_symbols():
     assert "∑" in result["canonical_mathml"]
 
 
+@requires_windows
 def test_packaged_bridge_hash_is_namespace_prefix_independent():
     default_namespace = (
         '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>'
