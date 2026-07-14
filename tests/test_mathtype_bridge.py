@@ -193,9 +193,64 @@ def test_csharp_bridge_has_deterministic_com_ownership():
     assert "internal sealed class EquationReference : IDisposable" in source
     assert source.count("using (EquationInventory") >= 8
     assert "foreach (object firstStoryObject in _document.StoryRanges)" not in source
-    assert "candidate.Kind == original.Kind" in source
+    assert "candidate.Kind == kind" in source
     assert "FinalReleaseComObject" not in source
     assert source.count("Marshal.ReleaseComObject") == 1
     assert "catch (InvalidComObjectException)" in source
     assert 'command == "set_equation_text"' not in source
     assert 'command == "clone_equation"' not in source
+
+
+def test_csharp_bridge_uses_display_tex_markers_for_display_layouts():
+    source = Path(
+        "word_document_server/mathtype_bridge/MathTypeBridge.cs"
+    ).read_text(encoding="utf-8")
+
+    assert 'return "$$" + tex + "$$";' in source
+    assert 'return "$" + tex + "$";' in source
+    assert 'scratchInsertRange.Text = ToggleMarkup(tex, requestedLayout);' in source
+    assert 'string marked = ToggleMarkup(tex, layout);' in source
+    assert 'layout == "display" || layout == "display_numbered"' in source
+    assert 'range.Text = ToggleMarkup(tex, "inline");' in source
+
+
+def test_csharp_bridge_builds_native_mathtype_numbered_display_fields():
+    source = Path(
+        "word_document_server/mathtype_bridge/MathTypeBridge.cs"
+    ).read_text(encoding="utf-8")
+
+    assert 'requestedLayout != "display_numbered"' in source
+    assert 'PrepareMathTypeDisplayInsertionRange(targetRange, rangeStart);' in source
+    assert 'if (paragraphEnd == paragraphStart + 1)' in source
+    assert 'range.Text = "\\r\\r";' in source
+    assert 'range.SetRange(rangeStart + 1, rangeStart + 1);' in source
+    assert 'ApplyMathTypeDisplayEquationStyle(targetRange);' in source
+    assert 'InsertMathTypeEquationNumber(targetRange);' in source
+    assert 'fields.Add(range, 51, "MTPlaceRef", true)' in source
+    assert 'AppendMathTypeNumberField(fields, outerField, "MTEqn \\\\h");' in source
+    assert 'AppendMathTypeNumberField(fields, outerField, "MTEqn \\\\c \\\\* Arabic");' in source
+
+
+def test_csharp_bridge_deletes_numbered_display_paragraphs_atomically():
+    source = Path(
+        "word_document_server/mathtype_bridge/MathTypeBridge.cs"
+    ).read_text(encoding="utf-8")
+
+    assert "DeleteMathTypeEquationContent(equation, layout);" in source
+    assert "DeleteOmmlEquationContent(equation, layout);" in source
+    assert 'if (!effectiveTracked && layout == "display_numbered")' in source
+    assert source.count("UpdateMathTypeNumberFields();") >= 3
+    assert '"MathType deletion failed and the automatic rollback could not be"' in source
+    assert '"OMML deletion failed and the automatic rollback could not be"' in source
+
+
+def test_csharp_bridge_saves_dirty_ole_objects_only_after_writes():
+    source = Path(
+        "word_document_server/mathtype_bridge/MathTypeBridge.cs"
+    ).read_text(encoding="utf-8")
+
+    replace = source.split("public static void ReplaceIfUnchanged(", 1)[1].split(
+        "public static Dictionary<string, object> Probe", 1
+    )[0]
+    assert "OleCloseSaveIfDirty = 0" in source
+    assert "CloseOleObject(oleObject, OleCloseSaveIfDirty);" in replace

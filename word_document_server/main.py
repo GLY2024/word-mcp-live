@@ -1934,7 +1934,96 @@ def register_tools():
         """Verify document protection and/or digital signature."""
         return protection_tools.verify_document(filename, password)
 
-    # MathType OLE equation tools (live, Windows only)
+    # Unified MathType OLE + Word OMML equation tools (live, Windows only)
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List Equations (Live)",
+            readOnlyHint=True,
+        ),
+        description=mathtype_tools.word_live_list_equations.__doc__,
+    )
+    def word_live_list_equations(filename: str = None):
+        """List MathType OLE and Word OMML equations through one live interface."""
+        return mathtype_tools.word_live_list_equations(filename)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get Equation (Live)",
+            readOnlyHint=True,
+        ),
+        description=mathtype_tools.word_live_get_equation.__doc__,
+    )
+    def word_live_get_equation(equation_id: str, filename: str = None):
+        """Read one MathType OLE or Word OMML equation as MathML plus a hash."""
+        return mathtype_tools.word_live_get_equation(equation_id, filename)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Dump Document with Equations (Live)",
+            readOnlyHint=True,
+        ),
+        description=mathtype_tools.word_live_dump_equation_document.__doc__,
+    )
+    def word_live_dump_equation_document(
+        output_path: str, filename: str = None
+    ):
+        """Dump document text and every MathType/OMML equation in one agent read."""
+        return mathtype_tools.word_live_dump_equation_document(output_path, filename)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Delete Equation (Live)",
+            destructiveHint=True,
+        ),
+        description=mathtype_tools.word_live_delete_equation.__doc__,
+    )
+    def word_live_delete_equation(
+        equation_id: str, revision_mode: str = "auto", filename: str = None
+    ):
+        """Delete one MathType OLE or Word OMML equation in one undo record."""
+        return mathtype_tools.word_live_delete_equation(
+            equation_id, revision_mode, filename
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Replace Equation from TeX (Live)",
+            destructiveHint=True,
+        ),
+        description=mathtype_tools.word_live_replace_equation_tex.__doc__,
+    )
+    def word_live_replace_equation_tex(
+        equation_id: str,
+        tex: str,
+        expected_mathml_sha256: str,
+        revision_mode: str = "auto",
+        filename: str = None,
+    ):
+        """Replace a MathType OLE or Word OMML equation from TeX through one interface."""
+        return mathtype_tools.word_live_replace_equation_tex(
+            equation_id, tex, expected_mathml_sha256, revision_mode, filename
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Insert Equation from TeX (Live)",
+            destructiveHint=True,
+        ),
+        description=mathtype_tools.word_live_insert_equation_tex.__doc__,
+    )
+    def word_live_insert_equation_tex(
+        tex: str,
+        range_start: int,
+        layout: str = "inline",
+        revision_mode: str = "auto",
+        filename: str = None,
+    ):
+        """Insert a new MathType equation from TeX at a main-story character offset."""
+        return mathtype_tools.word_live_insert_equation_tex(
+            tex, range_start, layout, revision_mode, filename
+        )
+
+    # MathType-specific compatibility and diagnostic tools
     @mcp.tool(
         annotations=ToolAnnotations(
             title="List MathType Equations (Live)",
@@ -1986,9 +2075,13 @@ def register_tools():
         ),
         description=mathtype_tools.word_live_delete_mathtype_equation.__doc__,
     )
-    def word_live_delete_mathtype_equation(equation_id: str, filename: str = None):
+    def word_live_delete_mathtype_equation(
+        equation_id: str, revision_mode: str = "auto", filename: str = None
+    ):
         """Delete one MathType equation inside a single Word undo record."""
-        return mathtype_tools.word_live_delete_mathtype_equation(equation_id, filename)
+        return mathtype_tools.word_live_delete_mathtype_equation(
+            equation_id, revision_mode, filename
+        )
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -2001,11 +2094,12 @@ def register_tools():
         equation_id: str,
         tex: str,
         expected_mathml_sha256: str,
+        revision_mode: str = "auto",
         filename: str = None,
     ):
         """Replace one MathType equation from TeX (popup-free, hash-guarded); returns the new equation_id and read-back MathML."""
         return mathtype_tools.word_live_replace_mathtype_equation_tex(
-            equation_id, tex, expected_mathml_sha256, filename
+            equation_id, tex, expected_mathml_sha256, revision_mode, filename
         )
 
     @mcp.tool(

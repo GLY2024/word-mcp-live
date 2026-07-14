@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **MathType OLE equation tools (Windows)** — 8 new live tools for listing, reading, dumping, deleting, replacing, and probing MathType OLE equations in the open document. Includes semantic MathML/TeX access, layout classification (inline / display / display_numbered with equation number / table), one-call whole-document dumps for agents, popup-free TeX replacement via MathType's Toggle TeX with an `expected_mathml_sha256` concurrency guard and verified automatic rollback on failure, and deterministic release of Word/MathType COM objects for long-running servers. Requires a bundled Word add-in (`word_document_server/mathtype_bridge/install_mathtype_addin.ps1`, per-user, one-time).
+- **Live MathType OLE + Word OMML equation tools (Windows)** — unified listing, reading, dumping, deletion, hash-guarded TeX replacement, and TeX insertion for both equation types. MathType insertion supports inline, display, and native numbered-display layouts (`MTDisplayEquation`, `MTPlaceRef`, and `SEQ MTEqn` fields), while revision modes and single-step Undo cover every write. The popup-free bridge verifies read-back MathML, rolls back failed edits, and deterministically releases Word/MathType COM objects. Requires a bundled Word add-in (`word_document_server/mathtype_bridge/install_mathtype_addin.ps1`, per-user, one-time).
 
 ## [1.6.0] - 2026-04-29
 
